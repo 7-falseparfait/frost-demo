@@ -1,0 +1,9 @@
+[package]
+name = "frost-demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+frost-core = "3"
+frost-secp256k1-tr = "3"
+rand = "0.8"
