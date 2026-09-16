@@ -362,3 +362,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+fn sign_message(
+    alice_key_package: &frost::keys::KeyPackage,
+    bob_key_package: &frost::keys::KeyPackage,
+    rng: &mut (impl rand::RngCore + rand::CryptoRng),
+) -> Result<(), Box<dyn std::error::Error>> {
+    let message = b"Hello FROST";
+    // Alice creates fresh signing nonces and commitments.
+    let (alice_nonces, alice_commitments) =
+        frost::round1::commit(alice_key_package.signing_share(), rng);
+
+    let (bob_nonces, bob_commitments) = frost::round1::commit(bob_key_package.signing_share(), rng);
+
+    println!("Alice created her signing nonces and commitments.");
+    println!("Bob created his signing nonces and commitments.");
+    Ok(())
+}
