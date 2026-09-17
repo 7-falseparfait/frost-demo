@@ -360,6 +360,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Bob:   {:?}", bob_pubkey_package.verifying_key());
     println!("Carol: {:?}", carol_pubkey_package.verifying_key());
 
+    sign_message(
+        &alice_key_package,
+        &bob_key_package,
+        &mut rng,
+        &alice_pubkey_package,
+    )?;
+
     Ok(())
 }
 
@@ -367,9 +374,32 @@ fn sign_message(
     alice_key_package: &frost::keys::KeyPackage,
     bob_key_package: &frost::keys::KeyPackage,
     rng: &mut (impl rand::RngCore + rand::CryptoRng),
+    alice_pubkey_package: &frost::keys::PublicKeyPackage,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // The message we want Alice and Bob to sign.
+    //
+    // FROST signs bytes, so the b"" prefix gives us a byte string.
     let message = b"Hello FROST";
-    // Alice creates fresh signing nonces and commitments.
+
+    // =========================================================
+    // SIGNING ROUND 1
+    // =========================================================
+    //
+    // Alice and Bob are the two signers for this 2-of-3 group.
+    //
+    // Each signer uses:
+    //     - their long-lived private signing share
+    //     - fresh cryptographic randomness
+    //
+    // to create:
+    //
+    //     1. signing nonces     -> PRIVATE, keep secret
+    //     2. signing commitments -> PUBLIC, share with others
+    //
+    // The nonces are only for this signing session and must
+    // never be reused for another signature.
+    //
+
     let (alice_nonces, alice_commitments) =
         frost::round1::commit(alice_key_package.signing_share(), rng);
 
@@ -377,5 +407,118 @@ fn sign_message(
 
     println!("Alice created her signing nonces and commitments.");
     println!("Bob created his signing nonces and commitments.");
+
+    // ---------------------------------------------------------
+    // CREATE THE SIGNING PACKAGE
+    // ---------------------------------------------------------
+    //
+    // We collect the public commitments from the participants
+    // who are signing this message.
+    //
+    // The map is:
+    //
+    //     Alice's ID -> Alice's commitment
+    //     Bob's ID   -> Bob's commitment
+    //
+    // Then we combine those commitments with the message.
+    //
+    // The SigningPackage represents this particular signing
+    // session: these signers, these commitments, this message.
+    //
+
+    let mut commitments = BTreeMap::new();
+
+    commitments.insert(alice_key_package.identifier().clone(), alice_commitments);
+
+    commitments.insert(bob_key_package.identifier().clone(), bob_commitments);
+
+    let signing_package = frost::SigningPackage::new(commitments, message);
+
+    // =========================================================
+    // SIGNING ROUND 2
+    // =========================================================
+    //
+    // Each signer now creates their signature share.
+    //
+    // Alice uses:
+    //     - the SigningPackage
+    //     - Alice's private nonces
+    //     - Alice's KeyPackage
+    //
+    // Bob does the same with his own private data.
+    //
+    // A signature share is NOT the final signature.
+    // It is that participant's contribution to the final
+    // group signature for this specific message.
+    //
+
+    let alice_signature_share =
+        frost::round2::sign(&signing_package, &alice_nonces, alice_key_package)?;
+
+    let bob_signature_share = frost::round2::sign(&signing_package, &bob_nonces, bob_key_package)?;
+
+    println!("\n=== SIGNING ROUND 2 ===");
+    println!("Alice created her signature share.");
+    println!("Bob created his signature share.");
+
+    // ---------------------------------------------------------
+    // COLLECT THE SIGNATURE SHARES
+    // ---------------------------------------------------------
+    //
+    // We put the signature shares into a BTreeMap so the
+    // protocol can associate each share with its participant.
+    //
+    //     Alice's ID -> Alice's signature share
+    //     Bob's ID   -> Bob's signature share
+    //
+
+    let mut signature_shares = BTreeMap::new();
+
+    signature_shares.insert(
+        alice_key_package.identifier().clone(),
+        alice_signature_share,
+    );
+
+    signature_shares.insert(bob_key_package.identifier().clone(), bob_signature_share);
+
+    // =========================================================
+    // AGGREGATION
+    // =========================================================
+    //
+    // The individual signature shares are now combined into
+    // ONE final Schnorr signature for the message.
+    //
+    // The PublicKeyPackage contains the group's public
+    // verification information, including the group public key Y.
+    //
+
+    let group_signature =
+        frost::aggregate(&signing_package, &signature_shares, &alice_pubkey_package)?;
+
+    println!("\n=== FINAL GROUP SIGNATURE ===");
+    println!("{group_signature:#?}");
+
+    // =========================================================
+    // VERIFY THE FINAL SIGNATURE
+    // =========================================================
+    //
+    // The PublicKeyPackage gives us the group verifying key Y:
+    //
+    //     alice_pubkey_package.verifying_key()
+    //
+    // We then verify:
+    //
+    //     message + final signature + Y
+    //
+    // If verification succeeds, the signature is valid for
+    // this exact message under the FROST group public key.
+    //
+
+    alice_pubkey_package
+        .verifying_key()
+        .verify(message, &group_signature)?;
+
+    println!("Signature verified successfully!");
+
     Ok(())
 }
