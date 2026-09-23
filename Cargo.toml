@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bitcoin = "0.32.102"
 frost-core = "3"
 frost-secp256k1-tr = "3"
 rand = "0.8"
+secp256k1 = "0.33.1"

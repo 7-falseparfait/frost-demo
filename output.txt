@@ -1,0 +1,105 @@
+Group public key:
+PublicKeyPackage {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    verifying_shares: {
+        Identifier(
+            "0000000000000000000000000000000000000000000000000000000000000001",
+        ): VerifyingShare(
+            "035507ad3da1bd897db4b8bc4901281da12c5dd789f27aa915880058d6c33b2f35",
+        ),
+        Identifier(
+            "0000000000000000000000000000000000000000000000000000000000000002",
+        ): VerifyingShare(
+            "02532e45e939d1303c941b1f3392ead6467ac6f55f3314682dc1bfce8a2a1511b4",
+        ),
+        Identifier(
+            "0000000000000000000000000000000000000000000000000000000000000003",
+        ): VerifyingShare(
+            "032608f3fb9ee02fa348faa83dc1be6d80bdfb04ccd73b9aba75c70419b05edacb",
+        ),
+    },
+    verifying_key: VerifyingKey(
+        "0331393186b9ff65d77586cf93762b96d3433aab91832fd5345661888aab2ad5ac",
+    ),
+    min_signers: Some(
+        2,
+    ),
+}
+
+Participant shares:
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000001"):
+SecretShare {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    identifier: Identifier(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+    ),
+    signing_share: SigningShare(
+        "<redacted>",
+    ),
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "0331393186b9ff65d77586cf93762b96d3433aab91832fd5345661888aab2ad5ac",
+            ),
+            CoefficientCommitment(
+                "0311f65d825d4a97cc841e1ae3ffd75f4a0a8c2bdc3b0a5428f92840899512ce51",
+            ),
+        ],
+    ),
+}
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000002"):
+SecretShare {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    identifier: Identifier(
+        "0000000000000000000000000000000000000000000000000000000000000002",
+    ),
+    signing_share: SigningShare(
+        "<redacted>",
+    ),
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "0331393186b9ff65d77586cf93762b96d3433aab91832fd5345661888aab2ad5ac",
+            ),
+            CoefficientCommitment(
+                "0311f65d825d4a97cc841e1ae3ffd75f4a0a8c2bdc3b0a5428f92840899512ce51",
+            ),
+        ],
+    ),
+}
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000003"):
+SecretShare {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    identifier: Identifier(
+        "0000000000000000000000000000000000000000000000000000000000000003",
+    ),
+    signing_share: SigningShare(
+        "<redacted>",
+    ),
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "0331393186b9ff65d77586cf93762b96d3433aab91832fd5345661888aab2ad5ac",
+            ),
+            CoefficientCommitment(
+                "0311f65d825d4a97cc841e1ae3ffd75f4a0a8c2bdc3b0a5428f92840899512ce51",
+            ),
+        ],
+    ),
+}

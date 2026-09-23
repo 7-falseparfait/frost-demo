@@ -1,0 +1,114 @@
+Alice has her secret package.
+Bob has his secret package.
+Carol has her secret package.
+
+Round 1 public packages:
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000001"):
+Package {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "0368b9deffd43e33aa4551eb9bdd8501f7f22c7f8d2f85af8aee0fdcfabf5a8274",
+            ),
+            CoefficientCommitment(
+                "03215256e75ef51c771150ccbf4309385670c19509406511549a0fa0b582ae779b",
+            ),
+        ],
+    ),
+    proof_of_knowledge: Signature {
+        R: "02777b81b958b372f5e77a3bcc5d1ee40c81493b716102afe75281f13332263635",
+        z: "81d3718d32a41f624f3cbb379af9ca1c5bb59414aa0e31af3ce9536365c58366",
+    },
+}
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000002"):
+Package {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "0275568b909d8127867b082c297be0c3b34fbeb64a323d63cf71d209bfc9875276",
+            ),
+            CoefficientCommitment(
+                "0369e6b03f07d1a9661737d69c43323819df438cb75d4f3ab0e2f034b74098c48c",
+            ),
+        ],
+    ),
+    proof_of_knowledge: Signature {
+        R: "022ed1ec1dce1a6d107758a87bd61fcc25068c14466b77bc08e2efba6bab0e04c9",
+        z: "55a50a74d7d5fbcd82968ed101468ed0a329ffdab1781c3c375d7399e8d8bc3f",
+    },
+}
+Participant Identifier("0000000000000000000000000000000000000000000000000000000000000003"):
+Package {
+    header: Header {
+        version: 0,
+        ciphersuite: (),
+        phantom: PhantomData<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    },
+    commitment: VerifiableSecretSharingCommitment(
+        [
+            CoefficientCommitment(
+                "026165d2432099b69188c76b972130669c43083be53061f090d83a2430101f6ebe",
+            ),
+            CoefficientCommitment(
+                "0360e1a7e7af730b98dda7c4e70c0ed5d071a8618ca37d468a039e35acf6b2b177",
+            ),
+        ],
+    ),
+    proof_of_knowledge: Signature {
+        R: "025b66ac723423c213fccae6b0ad9ab74b61f7a7fe7a87db76b82a4fe0749c27f7",
+        z: "e0f5ca372e8b1e8c665e6eafe0bbbd43a6d029a2822133dc87282bbbaa0142bf",
+    },
+}
+
+=== DKG ROUND 2 ===
+Alice created packages for:
+  Alice -> Identifier("0000000000000000000000000000000000000000000000000000000000000002")
+  Alice -> Identifier("0000000000000000000000000000000000000000000000000000000000000003")
+Bob created packages for:
+  Bob -> Identifier("0000000000000000000000000000000000000000000000000000000000000001")
+  Bob -> Identifier("0000000000000000000000000000000000000000000000000000000000000003")
+Carol created packages for:
+  Carol -> Identifier("0000000000000000000000000000000000000000000000000000000000000001")
+  Carol -> Identifier("0000000000000000000000000000000000000000000000000000000000000002")
+
+=== DKG COMPLETE ===
+Alice: final KeyPackage created
+Bob:   final KeyPackage created
+Carol: final KeyPackage created
+
+All participants now have their own private signing share.
+The group has one shared public key.
+
+=== GROUP PUBLIC KEY Y ===
+Alice: VerifyingKey("02be5450b861d302addaf1e3ce0a9bfc81e4d15ec62197c342fcb096cdcb9d1fc4")
+Bob:   VerifyingKey("02be5450b861d302addaf1e3ce0a9bfc81e4d15ec62197c342fcb096cdcb9d1fc4")
+Carol: VerifyingKey("02be5450b861d302addaf1e3ce0a9bfc81e4d15ec62197c342fcb096cdcb9d1fc4")
+Alice created her signing nonces and commitments.
+Bob created his signing nonces and commitments.
+
+=== SIGNING ROUND 2 ===
+Alice created her signature share.
+Bob created his signature share.
+
+=== FINAL GROUP SIGNATURE ===
+Signature {
+    R: "0330096987fa494aad21e8c6054c0581db53e5f33fd113384c423f0f723c5e2ac6",
+    z: "78c4de7a4cea40302f910a2180230b9e2b9bda7182bf741a9ca6b1f416575cb2",
+}
+Signature verified successfully!
+
+=== FROST TAPROOT OUTPUT KEY ===
+be5450b861d302addaf1e3ce0a9bfc81e4d15ec62197c342fcb096cdcb9d1fc4
+
+=== TAPROOT ADDRESS ===
+bcrt1phe29pwrp6vp2mkh3u08q4xlus8jdzhkxyxtuxshukztvmjuarlzqufauxz

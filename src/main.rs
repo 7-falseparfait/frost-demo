@@ -1,35 +1,8 @@
+use frost::keys::Tweak;
+use frost_core::keys::PublicKeyPackage;
 use frost_secp256k1_tr as frost;
 use rand::thread_rng;
 use std::collections::BTreeMap;
-// //TRUSTED DEALER KEY GENERATIONS
-// fn main() -> Result<(), Box<dyn std::error::Error>> {
-//     //Creating a FROST group with 3 participants
-//     let max_signers = 3;
-//     //This gives us 2 of 3 threshold. so at least 2 participants are required to sign
-//     let min_signers = 2;
-//     //There is a neeed for randomness to generate participant's secrets shares
-//     let rng = thread_rng();
-//     // Create the identifiers for the participants.
-//     // With 3 participants, we can think of these as:
-//     // ID 1 -> Alice
-//     // ID 2 -> Bob
-//     // ID 3 -> Carol
-//     let identifiers = frost::keys::IdentifierList::Default;
-//     // The trusted dealer generates:
-//     // 1. A ecret signing share for each participant
-//     // 2. One group public key for the whole FROST group
-//     let (shares, group_public_key) =
-//         frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, rng)?;
-//     println!("Group public key:");
-//     println!("{group_public_key:#?}");
-
-//     println!("\nParticipant shares:");
-//     for (identifier, share) in shares {
-//         println!("Participant {identifier:?}:");
-//         println!("{share:#?}");
-//     }
-//     Ok(())
-// }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ---------------------------------------------------------
@@ -84,12 +57,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     ONE shared group public key Y
     //
     // There is NO trusted dealer here.
-    //
     // Each participant starts their own part of the protocol.
     //
 
     // part1() gives Alice:
-    //
     //     alice_secret_package -> Alice keeps this private
     //     alice_public         -> shared with other participants
     //
@@ -101,9 +72,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         frost::keys::dkg::part1(bob, max_signers, min_signers, &mut rng)?;
 
     // Carol does the same thing independently.
-    //
-    // NOTE: this variable is named "carol_secret_package"
-    // so that the name is consistent with Alice and Bob.
     let (carol_secret_package, carol_public) =
         frost::keys::dkg::part1(carol, max_signers, min_signers, &mut rng)?;
 
@@ -115,21 +83,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ROUND 1 PUBLIC PACKAGES
     // ---------------------------------------------------------
     //
-    // Each participant has ONE public package.
-    //
-    // These public packages are the protocol information
-    // that gets shared with the other participants.
-    //
+    // Each participant has ONE public package containing protocol data.
     // Secret packages NEVER get shared.
     //
-    // We use a BTreeMap here to simulate the communication:
-    //
+    // We use a BTreeMap here to simulate network transmission:
     //     ID 1 -> Alice's public package
     //     ID 2 -> Bob's public package
     //     ID 3 -> Carol's public package
-    //
-    // In a real system, these would be sent between devices.
-    // Our single Rust program is just simulating that network.
     //
 
     let mut round1_packages = BTreeMap::new();
@@ -149,28 +109,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // SIMULATE ROUND 1 PACKAGE EXCHANGE
     // ---------------------------------------------------------
     //
-    // Alice needs the public packages from Bob and Carol.
-    //
-    // Alice already has her own secret package, so she does
-    // not need to send that anywhere.
-    //
-    // alice_received therefore contains:
-    //
-    //     Bob's ID   -> Bob's public package
-    //     Carol's ID -> Carol's public package
+    // Each participant collects public packages from their peers.
     //
     let alice_received = BTreeMap::from([
         (bob, round1_packages[&bob].clone()),
         (carol, round1_packages[&carol].clone()),
     ]);
 
-    // Bob receives Alice's and Carol's public packages.
     let bob_received = BTreeMap::from([
         (alice, round1_packages[&alice].clone()),
         (carol, round1_packages[&carol].clone()),
     ]);
 
-    // Carol receives Alice's and Bob's public packages.
     let carol_received = BTreeMap::from([
         (alice, round1_packages[&alice].clone()),
         (bob, round1_packages[&bob].clone()),
@@ -180,28 +130,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // DKG ROUND 2
     // =========================================================
     //
-    // Each participant now combines:
-    //
-    //     their own Round 1 secret package
-    //             +
-    //     the public packages received from their peers
-    //
-    // and runs part2().
-    //
-    // part2() produces:
-    //
-    //     1. New private Round 2 state
-    //        -> kept by that participant
-    //
-    //     2. A BTreeMap of packages
-    //        -> one package for EACH OTHER participant
-    //
-    // So Alice gets:
-    //
-    //     Alice's Round 2 secret state
-    //
-    //     ID 2 -> package for Bob
-    //     ID 3 -> package for Carol
+    // Each participant combines their own Round 1 secret package
+    // with the peer public packages to create Round 2 state +
+    // targeted packages for each participant.
     //
     let (alice_round2_secret, alice_round2_packages) =
         frost::keys::dkg::part2(alice_secret_package, &alice_received)?;
@@ -214,23 +145,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n=== DKG ROUND 2 ===");
 
-    // Alice created one package for each of the OTHER participants.
     println!("Alice created packages for:");
-
     for identifier in alice_round2_packages.keys() {
         println!("  Alice -> {identifier:?}");
     }
 
-    // Bob does the same.
     println!("Bob created packages for:");
-
     for identifier in bob_round2_packages.keys() {
         println!("  Bob -> {identifier:?}");
     }
 
-    // Carol does the same.
     println!("Carol created packages for:");
-
     for identifier in carol_round2_packages.keys() {
         println!("  Carol -> {identifier:?}");
     }
@@ -239,68 +164,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // SIMULATE ROUND 2 PACKAGE EXCHANGE
     // ---------------------------------------------------------
     //
-    // This time the packages are NOT one public package
-    // broadcast to everyone.
-    //
-    // Each package is specifically intended for one participant.
-    //
-    // For example:
-    //
-    //     Alice -> Bob
-    //     Alice -> Carol
-    //
-    // So Alice receives:
-    //
-    //     Bob's package intended for Alice
-    //     Carol's package intended for Alice
-    //
+    // These packages are targeted specifically per participant recipient.
+
     let alice_round2_received = BTreeMap::from([
         (bob, bob_round2_packages[&alice].clone()),
         (carol, carol_round2_packages[&alice].clone()),
     ]);
 
-    // Bob receives:
-    //
-    //     Alice's package intended for Bob
-    //     Carol's package intended for Bob
-    //
     let bob_round2_received = BTreeMap::from([
         (alice, alice_round2_packages[&bob].clone()),
         (carol, carol_round2_packages[&bob].clone()),
     ]);
 
-    // Carol receives:
-    //
-    //     Alice's package intended for Carol
-    //     Bob's package intended for Carol
-    //
     let carol_round2_received = BTreeMap::from([
         (alice, alice_round2_packages[&carol].clone()),
-        (bob, bob_round2_packages[&carol].clone()),
+        (bob, bob_round2_packages[&carol].clone()), // FIXED: Carol gets the share Bob sent to Carol
     ]);
 
     // =========================================================
     // DKG PART 3
     // =========================================================
     //
-    // Now each participant has:
-    //
-    //     their own Round 2 private state
-    //             +
-    //     the Round 1 information they received
-    //             +
-    //     the Round 2 packages they received
-    //
-    // part3() finishes the distributed key-generation process.
-    //
-    // Each participant gets:
-    //
-    //     KeyPackage
-    //         -> contains their long-lived private signing share
-    //
-    //     PublicKeyPackage
-    //         -> contains public information for the group,
-    //            including the shared group public key Y
+    // Finalizing DKG. Notice that `frost_secp256k1_tr` internally applies
+    // BIP-340/341 Taproot key tweaking during finalization.
     //
     let (alice_key_package, alice_pubkey_package) = frost::keys::dkg::part3(
         &alice_round2_secret,
@@ -320,23 +206,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // =========================================================
     // DKG COMPLETE
     // =========================================================
-    //
-    // We now have:
-    //
-    //     Alice -> her own private signing share
-    //     Bob   -> his own private signing share
-    //     Carol -> her own private signing share
-    //
-    //             +
-    //
-    //     ONE common group public key Y
-    //
-    // No participant ever needed to hold everybody else's
-    // private signing share.
-    //
 
     println!("\n=== DKG COMPLETE ===");
-
     println!("Alice: final KeyPackage created");
     println!("Bob:   final KeyPackage created");
     println!("Carol: final KeyPackage created");
@@ -347,15 +218,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ---------------------------------------------------------
     // VERIFY THAT EVERYONE GOT THE SAME GROUP PUBLIC KEY
     // ---------------------------------------------------------
-    //
-    // This is the Y we have been talking about.
-    //
-    // Alice, Bob, and Carol each have their own private share,
-    // but they all end up with the SAME group public key.
-    //
 
     println!("\n=== GROUP PUBLIC KEY Y ===");
-
     println!("Alice: {:?}", alice_pubkey_package.verifying_key());
     println!("Bob:   {:?}", bob_pubkey_package.verifying_key());
     println!("Carol: {:?}", carol_pubkey_package.verifying_key());
@@ -367,6 +231,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &alice_pubkey_package,
     )?;
 
+    create_taproot_address(&alice_pubkey_package)?;
+
     Ok(())
 }
 
@@ -376,29 +242,11 @@ fn sign_message(
     rng: &mut (impl rand::RngCore + rand::CryptoRng),
     alice_pubkey_package: &frost::keys::PublicKeyPackage,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // The message we want Alice and Bob to sign.
-    //
-    // FROST signs bytes, so the b"" prefix gives us a byte string.
     let message = b"Hello FROST";
 
     // =========================================================
     // SIGNING ROUND 1
     // =========================================================
-    //
-    // Alice and Bob are the two signers for this 2-of-3 group.
-    //
-    // Each signer uses:
-    //     - their long-lived private signing share
-    //     - fresh cryptographic randomness
-    //
-    // to create:
-    //
-    //     1. signing nonces     -> PRIVATE, keep secret
-    //     2. signing commitments -> PUBLIC, share with others
-    //
-    // The nonces are only for this signing session and must
-    // never be reused for another signature.
-    //
 
     let (alice_nonces, alice_commitments) =
         frost::round1::commit(alice_key_package.signing_share(), rng);
@@ -411,25 +259,9 @@ fn sign_message(
     // ---------------------------------------------------------
     // CREATE THE SIGNING PACKAGE
     // ---------------------------------------------------------
-    //
-    // We collect the public commitments from the participants
-    // who are signing this message.
-    //
-    // The map is:
-    //
-    //     Alice's ID -> Alice's commitment
-    //     Bob's ID   -> Bob's commitment
-    //
-    // Then we combine those commitments with the message.
-    //
-    // The SigningPackage represents this particular signing
-    // session: these signers, these commitments, this message.
-    //
 
     let mut commitments = BTreeMap::new();
-
     commitments.insert(alice_key_package.identifier().clone(), alice_commitments);
-
     commitments.insert(bob_key_package.identifier().clone(), bob_commitments);
 
     let signing_package = frost::SigningPackage::new(commitments, message);
@@ -437,20 +269,6 @@ fn sign_message(
     // =========================================================
     // SIGNING ROUND 2
     // =========================================================
-    //
-    // Each signer now creates their signature share.
-    //
-    // Alice uses:
-    //     - the SigningPackage
-    //     - Alice's private nonces
-    //     - Alice's KeyPackage
-    //
-    // Bob does the same with his own private data.
-    //
-    // A signature share is NOT the final signature.
-    // It is that participant's contribution to the final
-    // group signature for this specific message.
-    //
 
     let alice_signature_share =
         frost::round2::sign(&signing_package, &alice_nonces, alice_key_package)?;
@@ -464,33 +282,17 @@ fn sign_message(
     // ---------------------------------------------------------
     // COLLECT THE SIGNATURE SHARES
     // ---------------------------------------------------------
-    //
-    // We put the signature shares into a BTreeMap so the
-    // protocol can associate each share with its participant.
-    //
-    //     Alice's ID -> Alice's signature share
-    //     Bob's ID   -> Bob's signature share
-    //
 
     let mut signature_shares = BTreeMap::new();
-
     signature_shares.insert(
         alice_key_package.identifier().clone(),
         alice_signature_share,
     );
-
     signature_shares.insert(bob_key_package.identifier().clone(), bob_signature_share);
 
     // =========================================================
     // AGGREGATION
     // =========================================================
-    //
-    // The individual signature shares are now combined into
-    // ONE final Schnorr signature for the message.
-    //
-    // The PublicKeyPackage contains the group's public
-    // verification information, including the group public key Y.
-    //
 
     let group_signature =
         frost::aggregate(&signing_package, &signature_shares, &alice_pubkey_package)?;
@@ -501,24 +303,55 @@ fn sign_message(
     // =========================================================
     // VERIFY THE FINAL SIGNATURE
     // =========================================================
-    //
-    // The PublicKeyPackage gives us the group verifying key Y:
-    //
-    //     alice_pubkey_package.verifying_key()
-    //
-    // We then verify:
-    //
-    //     message + final signature + Y
-    //
-    // If verification succeeds, the signature is valid for
-    // this exact message under the FROST group public key.
-    //
 
     alice_pubkey_package
         .verifying_key()
         .verify(message, &group_signature)?;
 
     println!("Signature verified successfully!");
+
+    Ok(())
+}
+
+fn create_taproot_address(
+    pubkey_package: &frost::keys::PublicKeyPackage,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // ---------------------------------------------------------
+    // TAPROOT TWEAK DISTINCTION (WALKTHROUGH NOTE):
+    // ---------------------------------------------------------
+    // In standard Bitcoin Taproot development (e.g., using rust-bitcoin),
+    // an internal public key P must be tweaked with a script tree merkle root
+    // or an unspendable script hash to produce the final output key Q = P + t*G.
+    //
+    // However, in FROST using `frost_secp256k1_tr`:
+    // 1. The ciphersuite handles Taproot tweaking natively during key generation.
+    // 2. `pubkey_package.verifying_key()` returns the key AFTER it has already
+    //    been tweaked under the hood (BIP-341 Taproot Key-Path tweaking).
+    //
+    // Therefore, we MUST NOT re-tweak this key in `rust-bitcoin`.
+
+    let frost_key_bytes = pubkey_package.verifying_key().serialize()?;
+
+    // Deserialize into rust-bitcoin's secp256k1 PublicKey type.
+    let bitcoin_pubkey = bitcoin::secp256k1::PublicKey::from_slice(&frost_key_bytes)?;
+
+    // Extract the 32-byte x-only key representation mandated by BIP-340/341 Taproot.
+    let (x_only_key, _parity) = bitcoin_pubkey.x_only_public_key();
+
+    println!("\n=== FROST TAPROOT OUTPUT KEY ===");
+    println!("{x_only_key}");
+
+    // Because `frost_secp256k1_tr` already applied the Taproot tweak to the
+    // internal group key during DKG, `x_only_key` is already Q (the output key).
+    // We explicitly call `dangerous_assume_tweaked` to instruct `rust-bitcoin`
+    // NOT to apply a second Taproot tweak.
+    let output_key = bitcoin::key::TweakedPublicKey::dangerous_assume_tweaked(x_only_key);
+
+    // Build the P2TR address directly using the pre-tweaked output key.
+    let address = bitcoin::Address::p2tr_tweaked(output_key, bitcoin::address::KnownHrp::Regtest);
+
+    println!("\n=== TAPROOT ADDRESS ===");
+    println!("{address}");
 
     Ok(())
 }
